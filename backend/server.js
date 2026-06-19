@@ -46,13 +46,13 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Username must be at least 3 characters and password at least 4 characters.' });
     }
 
-    const existingUser = db.getUserByUsername(username);
+    const existingUser = await db.getUserByUsername(username);
     if (existingUser) {
       return res.status(400).json({ error: 'Username is already taken.' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = db.createUser(username, passwordHash);
+    const newUser = await db.createUser(username, passwordHash);
 
     const token = jwt.sign({ id: newUser.id, username: newUser.username }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ token, user: { id: newUser.id, username: newUser.username } });
@@ -70,7 +70,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required.' });
     }
 
-    const user = db.getUserByUsername(username);
+    const user = await db.getUserByUsername(username);
     if (!user) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
@@ -89,8 +89,8 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Get current user profile
-app.get('/api/auth/me', authenticate, (req, res) => {
-  const user = db.getUserById(req.user.id);
+app.get('/api/auth/me', authenticate, async (req, res) => {
+  const user = await db.getUserById(req.user.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found.' });
   }
@@ -192,25 +192,25 @@ app.get('/api/songs/search', authenticate, async (req, res) => {
 // --- SONG CALENDAR ENDPOINTS ---
 
 // Get songs of the current user for all time (or query parameters can filter)
-app.get('/api/songs', authenticate, (req, res) => {
-  const songs = db.getUserSongs(req.user.id);
+app.get('/api/songs', authenticate, async (req, res) => {
+  const songs = await db.getUserSongs(req.user.id);
   res.json(songs);
 });
 
 // Get songs of a specific friend (only if friends)
-app.get('/api/songs/friend/:friendId', authenticate, (req, res) => {
+app.get('/api/songs/friend/:friendId', authenticate, async (req, res) => {
   const { friendId } = req.params;
   
-  if (!db.areFriends(req.user.id, friendId)) {
+  if (!await db.areFriends(req.user.id, friendId)) {
     return res.status(403).json({ error: 'You must be friends with this user to view their calendar.' });
   }
 
-  const songs = db.getUserSongs(friendId);
+  const songs = await db.getUserSongs(friendId);
   res.json(songs);
 });
 
 // Set song for a specific date (YYYY-MM-DD)
-app.post('/api/songs', authenticate, (req, res) => {
+app.post('/api/songs', authenticate, async (req, res) => {
   const { date, videoId, title, channelTitle, thumbnail, note } = req.body;
   if (!date || !videoId || !title) {
     return res.status(400).json({ error: 'Missing date, videoId, or title parameters.' });
@@ -222,7 +222,7 @@ app.post('/api/songs', authenticate, (req, res) => {
     return res.status(400).json({ error: 'Invalid date format. Expected YYYY-MM-DD.' });
   }
 
-  const songRecord = db.setSongForDate(req.user.id, date, {
+  const songRecord = await db.setSongForDate(req.user.id, date, {
     videoId,
     title,
     channelTitle,
@@ -234,29 +234,29 @@ app.post('/api/songs', authenticate, (req, res) => {
 });
 
 // Delete song of a specific date (YYYY-MM-DD)
-app.delete('/api/songs', authenticate, (req, res) => {
+app.delete('/api/songs', authenticate, async (req, res) => {
   const { date } = req.body;
   if (!date) {
     return res.status(400).json({ error: 'Missing date parameter.' });
   }
 
-  db.deleteSongForDate(req.user.id, date);
+  await db.deleteSongForDate(req.user.id, date);
   res.json({ success: true, message: `Deleted song for ${date}` });
 });
 
 // --- FRIENDSHIP ENDPOINTS ---
 
 // Get all friends and pending requests
-app.get('/api/friends', authenticate, (req, res) => {
+app.get('/api/friends', authenticate, async (req, res) => {
   const userId = req.user.id;
-  const friends = db.getFriends(userId);
-  const { incoming, outgoing } = db.getPendingRequests(userId);
+  const friends = await db.getFriends(userId);
+  const { incoming, outgoing } = await db.getPendingRequests(userId);
   
   res.json({ friends, pendingIncoming: incoming, pendingOutgoing: outgoing });
 });
 
 // Send a friend request (by searching username)
-app.post('/api/friends/request', authenticate, (req, res) => {
+app.post('/api/friends/request', authenticate, async (req, res) => {
   const { friendUsername } = req.body;
   if (!friendUsername) {
     return res.status(400).json({ error: 'Username is required.' });
@@ -266,23 +266,23 @@ app.post('/api/friends/request', authenticate, (req, res) => {
     return res.status(400).json({ error: 'You cannot send a friend request to yourself.' });
   }
 
-  const targetUser = db.getUserByUsername(friendUsername);
+  const targetUser = await db.getUserByUsername(friendUsername);
   if (!targetUser) {
     return res.status(444).json({ error: `User "${friendUsername}" not found.` }); // Custom status code to identify "user not found" specifically
   }
 
-  const friendship = db.sendFriendRequest(req.user.id, targetUser.id);
+  const friendship = await db.sendFriendRequest(req.user.id, targetUser.id);
   res.json(friendship);
 });
 
 // Accept a friend request
-app.post('/api/friends/accept', authenticate, (req, res) => {
+app.post('/api/friends/accept', authenticate, async (req, res) => {
   const { friendshipId } = req.body;
   if (!friendshipId) {
     return res.status(400).json({ error: 'Missing friendshipId.' });
   }
 
-  const result = db.acceptFriendRequest(friendshipId, req.user.id);
+  const result = await db.acceptFriendRequest(friendshipId, req.user.id);
   if (!result) {
     return res.status(400).json({ error: 'Invalid friend request or not authorized to accept.' });
   }
@@ -291,13 +291,13 @@ app.post('/api/friends/accept', authenticate, (req, res) => {
 });
 
 // Decline a request or remove a friend
-app.post('/api/friends/remove', authenticate, (req, res) => {
+app.post('/api/friends/remove', authenticate, async (req, res) => {
   const { friendshipId } = req.body;
   if (!friendshipId) {
     return res.status(400).json({ error: 'Missing friendshipId.' });
   }
 
-  const success = db.declineOrCancelFriendship(friendshipId, req.user.id);
+  const success = await db.declineOrCancelFriendship(friendshipId, req.user.id);
   if (!success) {
     return res.status(400).json({ error: 'Could not remove friendship or friendship does not exist.' });
   }
@@ -305,7 +305,12 @@ app.post('/api/friends/remove', authenticate, (req, res) => {
   res.json({ success: true, message: 'Friendship request/status updated.' });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Backend server running at http://localhost:${PORT}`);
-});
+// Start Server (only if not running on Vercel as a serverless function)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`Backend server running at http://localhost:${PORT}`);
+  });
+}
+
+// Export for serverless environments
+export default app;
