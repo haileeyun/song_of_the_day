@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Production build outputs
+frontend/dist/
+
+# Local databases and private data
+backend/data/
+
+# Private credentials and configuration keys
+backend/.env
+.env
+
+# System files
+.DS_Store
+Thumbs.db
