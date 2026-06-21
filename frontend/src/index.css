@@ -438,6 +438,20 @@ header {
   border-style: dotted;
 }
 
+.calendar-day.future {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f7f8fa;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.calendar-day.future:hover {
+  background: #f7f8fa;
+  transform: none;
+  box-shadow: none;
+}
+
 .calendar-day.today {
   background: #fff9e6;
   border-color: #ffd166;

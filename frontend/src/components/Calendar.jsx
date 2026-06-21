@@ -45,6 +45,14 @@ export default function Calendar({ songs, onDateClick, isReadOnly, viewOwnerName
       today.getFullYear() === year;
   };
 
+  // Check if a day is in the future
+  const isFuture = (day) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(year, month, day);
+    return checkDate > today;
+  };
+
   // Compile calendar cells
   const cells = [];
   
@@ -58,12 +66,13 @@ export default function Calendar({ songs, onDateClick, isReadOnly, viewOwnerName
     const dateStr = formatDateKey(day);
     const daySong = songs.find(s => s.date === dateStr);
     const dayIsToday = isToday(day);
+    const dayIsFuture = isFuture(day);
 
     cells.push(
       <div 
         key={`day-${day}`} 
-        className={`calendar-day ${dayIsToday ? 'today' : ''}`}
-        onClick={() => onDateClick(dateStr, daySong)}
+        className={`calendar-day ${dayIsToday ? 'today' : ''} ${dayIsFuture ? 'future' : ''}`}
+        onClick={dayIsFuture ? undefined : () => onDateClick(dateStr, daySong)}
       >
         <span className="day-number">{day}</span>
         
@@ -84,7 +93,7 @@ export default function Calendar({ songs, onDateClick, isReadOnly, viewOwnerName
             </div>
           </>
         ) : (
-          !isReadOnly && (
+          !isReadOnly && !dayIsFuture && (
             <div className="add-song-icon">
               <span>+</span>
             </div>

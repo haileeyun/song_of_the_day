@@ -222,6 +222,15 @@ app.post('/api/songs', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'Invalid date format. Expected YYYY-MM-DD.' });
   }
 
+  // Ensure the date is not in the future (allowing up to UTC+14 for global compatibility)
+  const inputDate = new Date(date + 'T00:00:00Z');
+  const maxAllowedDate = new Date(Date.now() + 14 * 60 * 60 * 1000);
+  maxAllowedDate.setUTCHours(23, 59, 59, 999);
+
+  if (inputDate > maxAllowedDate) {
+    return res.status(400).json({ error: 'You cannot log a song for a future date.' });
+  }
+
   const songRecord = await db.setSongForDate(req.user.id, date, {
     videoId,
     title,
