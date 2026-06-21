@@ -439,17 +439,13 @@ header {
 }
 
 .calendar-day.future {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: #f7f8fa;
-  border-color: #e2e8f0;
-  box-shadow: none;
+  cursor: default;
 }
 
 .calendar-day.future:hover {
-  background: #f7f8fa;
+  background: #fff;
   transform: none;
-  box-shadow: none;
+  box-shadow: 2px 2px 0px rgba(58, 45, 45, 0.15);
 }
 
 .calendar-day.today {
