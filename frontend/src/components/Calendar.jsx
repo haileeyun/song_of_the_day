@@ -104,7 +104,7 @@ export default function Calendar({ songs, onDateClick, isReadOnly, viewOwnerName
   }
 
   return (
-    <div className="glass-panel" style={{ padding: '1.5rem' }}>
+    <div className="glass-panel calendar-panel">
       <div className="calendar-view-header">
         <div>
           <h2 className="calendar-month-title">
